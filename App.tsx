@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { translations } from './translations';
 import { Language } from './types';
 import { 
@@ -15,13 +15,17 @@ import {
   Award,
   Clock,
   CheckCircle2,
-  FileText
+  FileText,
+  ChevronDown,
+  Check
 } from 'lucide-react';
 
 const App: React.FC = () => {
   const [lang, setLang] = useState<Language>('en');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const langMenuRef = useRef<HTMLDivElement>(null);
 
   const t = translations[lang];
   const isRtl = lang === 'he';
@@ -29,16 +33,26 @@ const App: React.FC = () => {
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
     window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    
+    const handleClickOutside = (event: MouseEvent) => {
+      if (langMenuRef.current && !langMenuRef.current.contains(event.target as Node)) {
+        setIsLangMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
   }, []);
 
-  const toggleLang = () => {
-    const langs: Language[] = ['en', 'he', 'ru'];
-    const nextIndex = (langs.indexOf(lang) + 1) % langs.length;
-    setLang(langs[nextIndex]);
-  };
+  const languages = [
+    { code: 'en', label: 'English', native: 'English' },
+    { code: 'he', label: 'Hebrew', native: 'עברית' },
+    { code: 'ru', label: 'Russian', native: 'Русский' }
+  ];
 
-  // Fixed NavLink: making children optional resolves the TypeScript error where it's reported as missing despite being passed
   const NavLink = ({ href, children }: { href: string; children?: React.ReactNode }) => (
     <a 
       href={href} 
@@ -47,6 +61,39 @@ const App: React.FC = () => {
     >
       {children}
     </a>
+  );
+
+  const LanguageSwitcher = () => (
+    <div className="relative" ref={langMenuRef}>
+      <button 
+        onClick={() => setIsLangMenuOpen(!isLangMenuOpen)}
+        className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-slate-200 hover:border-cyan-500 hover:text-cyan-600 transition-all text-sm font-semibold uppercase bg-white/50"
+      >
+        <Globe size={16} />
+        {lang}
+        <ChevronDown size={14} className={`transition-transform duration-200 ${isLangMenuOpen ? 'rotate-180' : ''}`} />
+      </button>
+
+      {isLangMenuOpen && (
+        <div className={`absolute top-full mt-2 w-40 glass rounded-2xl shadow-xl overflow-hidden py-2 z-[60] animate-in fade-in zoom-in-95 duration-200 ${isRtl ? 'left-0' : 'right-0'}`}>
+          {languages.map((l) => (
+            <button
+              key={l.code}
+              onClick={() => {
+                setLang(l.code as Language);
+                setIsLangMenuOpen(false);
+              }}
+              className={`w-full flex items-center justify-between px-4 py-2.5 text-sm transition-colors hover:bg-cyan-50 ${lang === l.code ? 'text-cyan-600 font-bold bg-cyan-50/50' : 'text-slate-700'}`}
+            >
+              <div className="flex flex-col items-start">
+                <span>{l.native}</span>
+              </div>
+              {lang === l.code && <Check size={14} />}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   );
 
   return (
@@ -73,13 +120,9 @@ const App: React.FC = () => {
             <NavLink href="#why-belarus">{t.nav.whyBelarus}</NavLink>
             <NavLink href="#how-it-works">{t.nav.howItWorks}</NavLink>
             <NavLink href="#testimonials">{t.nav.testimonials}</NavLink>
-            <button 
-              onClick={toggleLang}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-slate-200 hover:border-cyan-500 hover:text-cyan-600 transition-all text-sm font-semibold uppercase"
-            >
-              <Globe size={16} />
-              {lang}
-            </button>
+            
+            <LanguageSwitcher />
+
             <a 
               href="#contact" 
               className="bg-slate-900 text-white px-6 py-2.5 rounded-full font-semibold hover:bg-cyan-600 hover:shadow-lg hover:shadow-cyan-200 transition-all"
@@ -89,9 +132,12 @@ const App: React.FC = () => {
           </div>
 
           {/* Mobile Menu Toggle */}
-          <button className="lg:hidden p-2 text-slate-900" onClick={() => setIsMenuOpen(!isMenuOpen)}>
-            {isMenuOpen ? <X size={28} /> : <Menu size={28} />}
-          </button>
+          <div className="flex items-center gap-4 lg:hidden">
+            <LanguageSwitcher />
+            <button className="p-2 text-slate-900" onClick={() => setIsMenuOpen(!isMenuOpen)}>
+              {isMenuOpen ? <X size={28} /> : <Menu size={28} />}
+            </button>
+          </div>
         </div>
 
         {/* Mobile Sidebar */}
@@ -101,13 +147,6 @@ const App: React.FC = () => {
             <NavLink href="#why-belarus">{t.nav.whyBelarus}</NavLink>
             <NavLink href="#how-it-works">{t.nav.howItWorks}</NavLink>
             <NavLink href="#testimonials">{t.nav.testimonials}</NavLink>
-            <button 
-              onClick={toggleLang}
-              className="flex items-center gap-2 w-fit px-4 py-2 rounded-lg border border-slate-200 uppercase font-bold"
-            >
-              <Globe size={18} />
-              {lang}
-            </button>
             <a href="#contact" className="bg-cyan-600 text-white px-6 py-3 rounded-xl font-bold text-center">
               {t.nav.contact}
             </a>
@@ -142,7 +181,7 @@ const App: React.FC = () => {
           <div className="relative">
             <div className="absolute inset-0 bg-gradient-to-tr from-cyan-100 to-transparent rounded-[3rem] blur-2xl opacity-50"></div>
             <img 
-              src="https://picsum.photos/seed/medical/800/600" 
+              src="https://images.unsplash.com/photo-1629909613654-28e377c37b09?auto=format&fit=crop&q=80&w=1000" 
               alt="Medical Tech" 
               className="relative rounded-[2.5rem] shadow-2xl border-4 border-white object-cover aspect-[4/3]"
             />
@@ -232,7 +271,7 @@ const App: React.FC = () => {
           </div>
           <div className="md:w-1/2">
              <div className="relative group">
-                <img src="https://picsum.photos/seed/care/600/400" className="rounded-3xl shadow-2xl grayscale hover:grayscale-0 transition-all duration-500" alt="Support" />
+                <img src="https://images.unsplash.com/photo-1576091160550-2173dba999ef?auto=format&fit=crop&q=80&w=1000" className="rounded-3xl shadow-2xl grayscale hover:grayscale-0 transition-all duration-500" alt="Support" />
                 <div className="absolute inset-0 bg-cyan-600/20 mix-blend-overlay rounded-3xl"></div>
              </div>
           </div>
