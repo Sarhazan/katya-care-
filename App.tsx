@@ -21,11 +21,14 @@ import {
 } from 'lucide-react';
 
 const App: React.FC = () => {
-  const [lang, setLang] = useState<Language>('he'); // Defaulting to Hebrew for local context
+  const [lang, setLang] = useState<Language>('he');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
+  const [isDesktopLangOpen, setIsDesktopLangOpen] = useState(false);
+  const [isMobileLangOpen, setIsMobileLangOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const langMenuRef = useRef<HTMLDivElement>(null);
+  
+  const desktopLangRef = useRef<HTMLDivElement>(null);
+  const mobileLangRef = useRef<HTMLDivElement>(null);
 
   const t = translations[lang];
   const isRtl = lang === 'he';
@@ -35,8 +38,11 @@ const App: React.FC = () => {
     window.addEventListener('scroll', handleScroll);
     
     const handleClickOutside = (event: MouseEvent) => {
-      if (langMenuRef.current && !langMenuRef.current.contains(event.target as Node)) {
-        setIsLangMenuOpen(false);
+      if (desktopLangRef.current && !desktopLangRef.current.contains(event.target as Node)) {
+        setIsDesktopLangOpen(false);
+      }
+      if (mobileLangRef.current && !mobileLangRef.current.contains(event.target as Node)) {
+        setIsMobileLangOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -48,10 +54,16 @@ const App: React.FC = () => {
   }, []);
 
   const languages = [
-    { code: 'en', label: 'English', native: 'English' },
-    { code: 'he', label: 'Hebrew', native: 'עברית' },
-    { code: 'ru', label: 'Russian', native: 'Русский' }
+    { code: 'en', native: 'English' },
+    { code: 'he', native: 'עברית' },
+    { code: 'ru', native: 'Русский' }
   ];
+
+  const handleLangChange = (newLang: Language) => {
+    setLang(newLang);
+    setIsDesktopLangOpen(false);
+    setIsMobileLangOpen(false);
+  };
 
   const NavLink = ({ href, children }: { href: string; children?: React.ReactNode }) => (
     <a 
@@ -61,37 +73,6 @@ const App: React.FC = () => {
     >
       {children}
     </a>
-  );
-
-  const LanguageSwitcher = () => (
-    <div className="relative" ref={langMenuRef}>
-      <button 
-        onClick={() => setIsLangMenuOpen(!isLangMenuOpen)}
-        className="flex items-center gap-2 px-4 py-2 rounded-full border border-slate-300 hover:border-cyan-600 hover:text-cyan-700 transition-all text-sm font-bold uppercase bg-white shadow-sm"
-      >
-        <Globe size={16} />
-        {lang}
-        <ChevronDown size={14} className={`transition-transform duration-200 ${isLangMenuOpen ? 'rotate-180' : ''}`} />
-      </button>
-
-      {isLangMenuOpen && (
-        <div className={`absolute top-full mt-2 w-48 glass rounded-2xl shadow-2xl overflow-hidden py-2 z-[60] animate-in fade-in zoom-in-95 duration-200 ${isRtl ? 'left-0' : 'right-0'}`}>
-          {languages.map((l) => (
-            <button
-              key={l.code}
-              onClick={() => {
-                setLang(l.code as Language);
-                setIsLangMenuOpen(false);
-              }}
-              className={`w-full flex items-center justify-between px-5 py-3 text-sm transition-colors hover:bg-cyan-50 ${lang === l.code ? 'text-cyan-700 font-bold bg-cyan-100/50' : 'text-slate-800'}`}
-            >
-              <span className="text-base">{l.native}</span>
-              {lang === l.code && <Check size={18} className="text-cyan-600" />}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
   );
 
   return (
@@ -119,7 +100,31 @@ const App: React.FC = () => {
             <NavLink href="#how-it-works">{t.nav.howItWorks}</NavLink>
             <NavLink href="#testimonials">{t.nav.testimonials}</NavLink>
             
-            <LanguageSwitcher />
+            {/* Desktop Lang Switcher */}
+            <div className="relative" ref={desktopLangRef}>
+              <button 
+                onClick={() => setIsDesktopLangOpen(!isDesktopLangOpen)}
+                className="flex items-center gap-2 px-4 py-2 rounded-full border border-slate-300 hover:border-cyan-600 hover:text-cyan-700 transition-all text-sm font-bold uppercase bg-white shadow-sm"
+              >
+                <Globe size={16} />
+                {lang}
+                <ChevronDown size={14} className={`transition-transform duration-200 ${isDesktopLangOpen ? 'rotate-180' : ''}`} />
+              </button>
+              {isDesktopLangOpen && (
+                <div className={`absolute top-full mt-2 w-48 glass rounded-2xl shadow-2xl overflow-hidden py-2 z-[60] animate-in fade-in zoom-in-95 duration-200 ${isRtl ? 'left-0' : 'right-0'}`}>
+                  {languages.map((l) => (
+                    <button
+                      key={l.code}
+                      onClick={() => handleLangChange(l.code as Language)}
+                      className={`w-full flex items-center justify-between px-5 py-3 text-sm transition-colors hover:bg-cyan-50 ${lang === l.code ? 'text-cyan-700 font-bold bg-cyan-100/50' : 'text-slate-800'}`}
+                    >
+                      <span className="text-base">{l.native}</span>
+                      {lang === l.code && <Check size={18} className="text-cyan-600" />}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
 
             <a 
               href="#contact" 
@@ -129,9 +134,33 @@ const App: React.FC = () => {
             </a>
           </div>
 
-          {/* Mobile Menu Toggle */}
+          {/* Mobile Menu Toggle Area */}
           <div className="flex items-center gap-4 lg:hidden">
-            <LanguageSwitcher />
+            {/* Mobile Lang Switcher */}
+            <div className="relative" ref={mobileLangRef}>
+              <button 
+                onClick={() => setIsMobileLangOpen(!isMobileLangOpen)}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-slate-300 hover:border-cyan-600 transition-all text-xs font-bold uppercase bg-white shadow-sm"
+              >
+                <Globe size={14} />
+                {lang}
+                <ChevronDown size={12} />
+              </button>
+              {isMobileLangOpen && (
+                <div className={`absolute top-full mt-2 w-40 glass rounded-xl shadow-2xl overflow-hidden py-1 z-[60] ${isRtl ? 'left-0' : 'right-0'}`}>
+                  {languages.map((l) => (
+                    <button
+                      key={l.code}
+                      onClick={() => handleLangChange(l.code as Language)}
+                      className={`w-full flex items-center justify-between px-4 py-2 text-sm ${lang === l.code ? 'text-cyan-700 font-bold bg-cyan-50' : 'text-slate-800'}`}
+                    >
+                      <span>{l.native}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            
             <button className="p-2 text-slate-900 bg-white rounded-xl shadow-sm border border-slate-200" onClick={() => setIsMenuOpen(!isMenuOpen)}>
               {isMenuOpen ? <X size={28} /> : <Menu size={28} />}
             </button>
@@ -186,7 +215,6 @@ const App: React.FC = () => {
               />
               <div className="absolute inset-0 bg-gradient-to-t from-slate-900/40 to-transparent"></div>
             </div>
-            
             <div className="absolute -bottom-10 -left-6 glass p-7 rounded-[2rem] shadow-2xl hidden md:block max-w-[240px] border border-white/50">
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-10 h-10 rounded-xl bg-green-100 text-green-700 flex items-center justify-center shadow-inner">
@@ -220,7 +248,6 @@ const App: React.FC = () => {
                 </div>
                 <h3 className="text-2xl font-black mb-4 text-slate-900 group-hover:text-cyan-700 transition-colors">{service.title}</h3>
                 <p className="text-slate-700 leading-relaxed text-base font-medium">{service.desc}</p>
-                <div className="absolute -bottom-2 -right-2 w-16 h-16 bg-cyan-100 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
               </div>
             ))}
           </div>
@@ -279,7 +306,6 @@ const App: React.FC = () => {
                   className="rounded-[2.5rem] shadow-[0_0_50px_rgba(8,145,178,0.3)] transition-all duration-700 hover:rotate-1" 
                   alt="Personal Support" 
                 />
-                <div className="absolute inset-0 bg-cyan-900/20 mix-blend-multiply rounded-[2.5rem]"></div>
              </div>
           </div>
         </div>
@@ -339,7 +365,17 @@ const App: React.FC = () => {
         </div>
       </section>
 
-      {/* Final CTA & Form */}
+      {/* About Section */}
+      <section id="about" className="py-28 bg-white border-y border-slate-100">
+        <div className="max-w-4xl mx-auto px-4 text-center space-y-8">
+          <h2 className="text-3xl font-bold text-slate-900">{t.about.title}</h2>
+          <p className="text-xl text-slate-600 leading-relaxed font-light">
+            {t.about.content}
+          </p>
+        </div>
+      </section>
+
+      {/* Contact Section */}
       <section id="contact" className="py-32 relative overflow-hidden bg-white">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[140%] h-[140%] bg-cyan-100/30 rounded-full blur-[150px] -z-10"></div>
         <div className="max-w-7xl mx-auto px-4 grid lg:grid-cols-2 gap-24 items-center">
@@ -374,16 +410,16 @@ const App: React.FC = () => {
               <div className="grid md:grid-cols-2 gap-8">
                 <div className="space-y-3">
                   <label className="text-base font-black text-slate-800 block">{t.footer.form.name}</label>
-                  <input type="text" className="w-full bg-white border-2 border-slate-200 rounded-2xl px-5 py-4 focus:ring-4 focus:ring-cyan-500/20 focus:border-cyan-600 outline-none transition-all font-bold text-slate-900 placeholder-slate-400" placeholder="John Doe" />
+                  <input type="text" className="w-full bg-white border-2 border-slate-200 rounded-2xl px-5 py-4 focus:ring-4 focus:ring-cyan-500/20 focus:border-cyan-600 outline-none transition-all font-bold text-slate-900 placeholder-slate-400" />
                 </div>
                 <div className="space-y-3">
                   <label className="text-base font-black text-slate-800 block">{t.footer.form.phone}</label>
-                  <input type="tel" className="w-full bg-white border-2 border-slate-200 rounded-2xl px-5 py-4 focus:ring-4 focus:ring-cyan-500/20 focus:border-cyan-600 outline-none transition-all font-bold text-slate-900" placeholder="+972-50-000-0000" />
+                  <input type="tel" className="w-full bg-white border-2 border-slate-200 rounded-2xl px-5 py-4 focus:ring-4 focus:ring-cyan-500/20 focus:border-cyan-600 outline-none transition-all font-bold text-slate-900" />
                 </div>
               </div>
               <div className="space-y-3">
                 <label className="text-base font-black text-slate-800 block">{t.footer.form.email}</label>
-                <input type="email" className="w-full bg-white border-2 border-slate-200 rounded-2xl px-5 py-4 focus:ring-4 focus:ring-cyan-500/20 focus:border-cyan-600 outline-none transition-all font-bold text-slate-900" placeholder="name@example.com" />
+                <input type="email" className="w-full bg-white border-2 border-slate-200 rounded-2xl px-5 py-4 focus:ring-4 focus:ring-cyan-500/20 focus:border-cyan-600 outline-none transition-all font-bold text-slate-900" />
               </div>
               <div className="grid md:grid-cols-2 gap-8">
                 <div className="space-y-3">
@@ -396,7 +432,7 @@ const App: React.FC = () => {
                 </div>
                 <div className="space-y-3">
                   <label className="text-base font-black text-slate-800 block">{t.footer.form.treatment}</label>
-                  <input type="text" className="w-full bg-white border-2 border-slate-200 rounded-2xl px-5 py-4 focus:ring-4 focus:ring-cyan-500/20 focus:border-cyan-600 outline-none transition-all font-bold text-slate-900" placeholder="Dental Implants" />
+                  <input type="text" className="w-full bg-white border-2 border-slate-200 rounded-2xl px-5 py-4 focus:ring-4 focus:ring-cyan-500/20 focus:border-cyan-600 outline-none transition-all font-bold text-slate-900" />
                 </div>
               </div>
               <button className="w-full bg-slate-900 text-white font-black py-5 rounded-2xl hover:bg-cyan-600 transition-all text-xl shadow-2xl hover:shadow-cyan-400/40">
